@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Men's Outfit Selector</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f5f5f5; }
+    .section { display:none; padding:20px; text-align:center; }
+    .section.active { display:block; }
+    .options img { width:80px; height:80px; margin:10px; cursor:pointer; border:2px solid transparent; transition:all 0.3s; border-radius:8px;}
+    .options img.selected { transform: scale(1.2); border-color:#333; box-shadow: 0 4px 15px rgba(0,0,0,0.3);}
+    #outfits img { width:100px; height:140px; margin:5px; cursor:pointer; border-radius:8px; transition:0.3s; }
+    #outfits img:hover { transform: scale(1.05); }
+    #loading { display:none; text-align:center; font-size:1.2em; margin-top:20px;}
+    #fullscreen { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); justify-content:center; align-items:center; z-index:1000;}
+    #fullscreen img { max-width:90%; max-height:90%; }
+  </style>
+</head>
+<body>
+
+  <div id="climate-section" class="section active">
+    <h2>Select Climate</h2>
+    <div class="options" id="climate-options"></div>
+  </div>
+
+  <div id="occasion-section" class="section">
+    <h2>Select Occasion</h2>
+    <div class="options" id="occasion-options"></div>
+  </div>
+
+  <div id="place-section" class="section">
+    <h2>Select Place</h2>
+    <div class="options" id="place-options"></div>
+    <button id="find-outfit-btn" style="margin-top:20px; padding:10px 20px; font-size:16px;">Find Outfit</button>
+  </div>
+
+  <div id="loading">Your stylish outfits are loading...</div>
+
+  <div id="outfits" class="section"></div>
+
+  <div id="fullscreen" onclick="this.style.display='none'">
+    <img id="fullscreen-img" src="">
+  </div>
+
+<script>
+/* ------------------ Step 2: Define all options ------------------ */
+const climates = ["summer","winter","rainy"];
+const occasions = ["casual","formal","semi-formal","business","travel","party","wedding","sports","outdoor","daily","datenight","festival"];
+const places = ["office","coffee shop","restaurant","shopping mall","library","friend house","park","beach","gym","wedding hall","airport","college"];
+
+/* ------------------ Step 3: Generate 432 possibilities ------------------ */
+const combinations = [];
+let idCounter = 1;
+for(let c of climates){
+  for(let o of occasions){
+    for(let p of places){
+      const id = String(idCounter).padStart(3,"0");
+      const code = c[0]+o[0]+p[0]; // example: scc
+      combinations.push({id, climate:c, occasion:o, place:p, code});
+      idCounter++;
+    }
+  }
+}
+
+/* ------------------ Step 4: Display options with images ------------------ */
+function createOptions(containerId, options) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = "";
+  options.forEach(opt => {
+    const img = document.createElement("img");
+    img.src = `images/${opt}.jpg`; // replace with your climate/occasion/place images
+    img.alt = opt;
+    img.dataset.value = opt;
+    container.appendChild(img);
+  });
+}
+
+/* Climate Selection */
+createOptions("climate-options", climates);
+
+/* ------------------ Step 5: Handle selection and navigation ------------------ */
+let selectedClimate = "";
+let selectedOccasion = "";
+let selectedPlace = "";
+
+function setupSelection(sectionId, nextSectionId, selectedVarName) {
+  const container = document.getElementById(sectionId+"-options");
+  container.querySelectorAll("img").forEach(img=>{
+    img.addEventListener("click", ()=>{
+      container.querySelectorAll("img").forEach(i=>i.classList.remove("selected"));
+      img.classList.add("selected");
+      window[selectedVarName] = img.dataset.value;
+
+      // depth animation
+      img.style.transform = "scale(1.5)";
+      setTimeout(()=>{
+        document.getElementById(sectionId).classList.remove("active");
+        document.getElementById(nextSectionId).classList.add("active");
+      }, 300);
+    });
+  });
+}
+
+/* Setup Climate Selection */
+setupSelection("climate", "occasion", "selectedClimate");
+
+/* Setup Occasion Selection */
+createOptions("occasion-options", occasions);
+setupSelection("occasion", "place", "selectedOccasion");
+
+/* Setup Place Selection */
+createOptions("place-options", places);
+setupSelection("place", "place", "selectedPlace"); // temporary
+
+/* ------------------ Step 6: Find outfit button ------------------ */
+document.getElementById("find-outfit-btn").addEventListener("click", ()=>{
+  selectedPlace = document.querySelector("#place-options img.selected")?.dataset.value;
+  if(!selectedClimate || !selectedOccasion || !selectedPlace){ alert("Please select all!"); return; }
+
+  document.getElementById("place-section").classList.remove("active");
+  document.getElementById("loading").style.display = "block";
+
+  // find the matching combination
+  const match = combinations.find(c => c.climate===selectedClimate && c.occasion===selectedOccasion && c.place===selectedPlace);
+  if(!match){ alert("No combination found"); return; }
+
+  setTimeout(()=>{
+    document.getElementById("loading").style.display = "none";
+    showOutfits(match.id, match.code);
+  }, 5000); // 5 sec loading
+});
+
+/* ------------------ Step 7: Display outfits ------------------ */
+function showOutfits(id, code){
+  const container = document.getElementById("outfits");
+  container.innerHTML = "";
+  for(let i=1;i<=50;i++){
+    const img = document.createElement("img");
+    let num = String(i).padStart(2,"0");
+    img.src = `${id}${code}${num}.jpg`; // e.g., 001scc01.jpg
+    img.alt = `Outfit ${i}`;
+    img.addEventListener("click", ()=>{
+      const fullscreen = document.getElementById("fullscreen");
+      document.getElementById("fullscreen-img").src = img.src;
+      fullscreen.style.display = "flex";
+    });
+    container.appendChild(img);
+  }
+  container.classList.add("active");
+}
+</script>
+</body>
+  </html>
